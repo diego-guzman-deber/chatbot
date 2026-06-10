@@ -70,6 +70,18 @@ def verify():
 
         logging.info("VERIFICATION_FAILED")
         return jsonify({"status": "error", "message": "Verification failed"}), 403
+@webhook_blueprint.route("/", methods=["GET"])
+@webhook_blueprint.route("/health", methods=["GET"])
+def health_check():
+    """Simple health check endpoint to verify the service is up and running."""
+    return jsonify({
+        "status": "ok",
+        "service": "WhatsApp Bot",
+        "domain": "chatbot.eldeber.bo",
+        "message": "El servicio está funcionando correctamente 🚀"
+    }), 200
+
+
 @webhook_blueprint.route("/webhook", methods=["GET"])
 def webhook_get():
     return verify()

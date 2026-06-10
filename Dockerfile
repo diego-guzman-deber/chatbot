@@ -46,7 +46,7 @@ EXPOSE 8000
 
 # Health check para Dokploy
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/webhook')" || exit 1
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
 
 # Comando de inicio con Gunicorn (producción) en lugar del servidor de desarrollo de Flask
 # Gunicorn: workers = (2 * CPUs) + 1  →  ajusta según tu servidor
