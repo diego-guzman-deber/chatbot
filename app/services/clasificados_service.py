@@ -1,5 +1,6 @@
 import shelve
 import logging
+import os
 
 # ──────────────────────────────────────────────
 # Estado de conversación por usuario
@@ -17,7 +18,8 @@ ESTADOS = [
     "PASO_RESUMEN",
 ]
 
-DB_CONVS = "conversations_db"
+_DB_DIR = os.environ.get("DB_PATH", "/app")
+DB_CONVS = os.path.join(_DB_DIR, "conversations_db")
 
 
 def _load_conv(wa_id: str) -> dict:

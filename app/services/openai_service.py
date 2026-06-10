@@ -11,6 +11,9 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_ASSISTANT_ID = os.getenv("OPENAI_ASSISTANT_ID")
 client = OpenAI(api_key=OPENAI_API_KEY)
 
+_DB_DIR = os.environ.get("DB_PATH", "/app")
+_THREADS_DB = os.path.join(_DB_DIR, "threads_db")
+
 # Per-user lock to prevent concurrent webhook retries from racing each other
 _user_locks: dict[str, threading.Lock] = {}
 _user_locks_meta = threading.Lock()
@@ -51,12 +54,12 @@ def create_assistant(file):
 
 # Use context manager to ensure the shelf file is closed properly
 def check_if_thread_exists(wa_id):
-    with shelve.open("threads_db") as threads_shelf:
+    with shelve.open(_THREADS_DB) as threads_shelf:
         return threads_shelf.get(wa_id, None)
 
 
 def store_thread(wa_id, thread_id):
-    with shelve.open("threads_db", writeback=True) as threads_shelf:
+    with shelve.open(_THREADS_DB, writeback=True) as threads_shelf:
         threads_shelf[wa_id] = thread_id
 
 

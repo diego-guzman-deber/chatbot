@@ -24,19 +24,24 @@ LABEL description="Python WhatsApp Bot - Flask API"
 # Variables de entorno para Python
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app
+    PYTHONPATH=/app \
+    DB_PATH=/data
 
 WORKDIR /app
 
 # Crear usuario no-root para mayor seguridad
 RUN groupadd --gid 1001 appgroup \
-    && useradd --uid 1001 --gid appgroup --shell /bin/bash --create-home appuser
+    && useradd --uid 1001 --gid appgroup --shell /bin/bash --create-home appuser \
+    && mkdir -p /data && chown appuser:appgroup /data
 
 # Copiar dependencias instaladas desde el stage builder
 COPY --from=builder /install /usr/local
 
 # Copiar el código fuente de la aplicación
 COPY --chown=appuser:appgroup . .
+
+# Volumen para persistir las bases de datos entre reinicios del contenedor
+VOLUME ["/data"]
 
 # Cambiar al usuario no-root
 USER appuser
