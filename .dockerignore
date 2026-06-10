@@ -1,0 +1,53 @@
+# Control de versiones
+.git
+.gitignore
+
+# Entornos virtuales
+.venv
+venv
+env
+
+# Cachés de Python
+__pycache__
+*.py[cod]
+*.pyc
+*.pyo
+*.pyd
+.mypy_cache
+
+# Variables de entorno (¡nunca al contenedor!)
+.env
+
+# Bases de datos locales
+*.db
+*.rdb
+conversations_db
+threads_db
+
+# Documentación y archivos auxiliares
+docs
+img
+README.md
+LICENCE.txt
+example.env
+
+# IDEs
+.vscode
+.idea
+.spyproject
+
+# Tests y cobertura
+htmlcov
+.tox
+.coverage
+coverage.xml
+*.cover
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Archivos temporales
+*.log
+*.swp
+*.swo
