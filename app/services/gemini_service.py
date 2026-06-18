@@ -188,11 +188,25 @@ def generate_response(message_body: str, wa_id: str, name: str) -> str | None:
         return reply
 
     except genai_errors.ClientError as e:
-        status = getattr(e, "status_code", 0) or 0
+        # Parsear el status code desde el string del error (ej: "429 RESOURCE_EXHAUSTED...")
+        error_str = str(e)
+        status_match = re.match(r"^(\d+)", error_str)
+        status = int(status_match.group(1)) if status_match else 0
+
         if status == 429:
-            # Extraer el retryDelay sugerido por Google del mensaje de error
-            retry_match = re.search(r"retry in (\d+)", str(e))
-            wait_s = int(retry_match.group(1)) if retry_match else 30
+            # Créditos prepagados agotados — no tiene sentido reintentar
+            if "prepayment credits are depleted" in error_str:
+                logging.error(
+                    f"[{wa_id}] Créditos de Gemini agotados. "
+                    "Recarga en https://ai.studio/projects"
+                )
+                return (
+                    "El servicio está temporalmente no disponible. "
+                    "Por favor intenta más tarde. 🙏"
+                )
+
+            retry_match = re.search(r"retry in (\d+)", error_str)
+            wait_s = min(int(retry_match.group(1)) if retry_match else 30, 45)
             logging.warning(
                 f"[{wa_id}] Gemini 429 - cuota agotada. "
                 f"Reintentando en {wait_s}s..."
