@@ -3,7 +3,7 @@ from flask import current_app, jsonify
 import json
 import requests
 
-from app.services.clasificados_service import generate_response
+from app.services.gemini_service import generate_response
 import re
 
 
@@ -82,7 +82,7 @@ def process_whatsapp_message(body):
     message = body["entry"][0]["changes"][0]["value"]["messages"][0]
     message_body = message["text"]["body"]
 
-    # OpenAI Integration
+    # Gemini Integration
     response = generate_response(message_body, wa_id, name)
     if response is None:
         # Duplicate webhook retry was dropped — nothing to send
