@@ -17,7 +17,6 @@ from google.genai import types
 
 load_dotenv()
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 
 # Prompt de sistema fijo — define la personalidad del bot como asesor de clasificados
@@ -53,8 +52,24 @@ Tu única función es ayudar a los usuarios a publicar, mejorar y gestionar sus 
 Recuerda: eres el mejor asesor de clasificados de Bolivia. Tu objetivo es que cada aviso se publique completo y venda rápido.
 """
 
-# Cliente de Gemini
-_client = genai.Client(api_key=GEMINI_API_KEY)
+# Cliente de Gemini — inicialización lazy para evitar crash al arrancar
+# si la variable GEMINI_API_KEY aún no está disponible en el entorno.
+_client: genai.Client | None = None
+
+
+def _get_client() -> genai.Client:
+    """Retorna el cliente de Gemini, creándolo la primera vez que se necesita."""
+    global _client
+    if _client is None:
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            raise RuntimeError(
+                "GEMINI_API_KEY no está configurada. "
+                "Agrégala como variable de entorno en Dokploy."
+            )
+        _client = genai.Client(api_key=api_key)
+        logging.info("Cliente de Gemini inicializado correctamente.")
+    return _client
 
 # Ruta de la base de datos de historial (se respeta DB_PATH del Dockerfile)
 _DB_DIR = os.environ.get("DB_PATH", "/app")
@@ -140,7 +155,7 @@ def generate_response(message_body: str, wa_id: str, name: str) -> str | None:
         logging.info(f"[{wa_id}] Enviando {len(contents)} turn(s) a Gemini ({GEMINI_MODEL})")
 
         # Llamar a la API de Gemini
-        response = _client.models.generate_content(
+        response = _get_client().models.generate_content(
             model=GEMINI_MODEL,
             contents=contents,
             config=types.GenerateContentConfig(
