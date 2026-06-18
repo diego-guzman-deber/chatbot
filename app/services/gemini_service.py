@@ -9,11 +9,14 @@ equivalente al sistema de "threads" de OpenAI Assistants.
 import shelve
 import logging
 import os
+import time
 import threading
+import re
 from dotenv import load_dotenv
 
 from google import genai
 from google.genai import types
+from google.genai import errors as genai_errors
 
 load_dotenv()
 
@@ -184,8 +187,43 @@ def generate_response(message_body: str, wa_id: str, name: str) -> str | None:
         _save_history(wa_id, history)
         return reply
 
+    except genai_errors.ClientError as e:
+        status = getattr(e, "status_code", 0) or 0
+        if status == 429:
+            # Extraer el retryDelay sugerido por Google del mensaje de error
+            retry_match = re.search(r"retry in (\d+)", str(e))
+            wait_s = int(retry_match.group(1)) if retry_match else 30
+            logging.warning(
+                f"[{wa_id}] Gemini 429 - cuota agotada. "
+                f"Reintentando en {wait_s}s..."
+            )
+            time.sleep(wait_s)
+            try:
+                response = _get_client().models.generate_content(
+                    model=GEMINI_MODEL,
+                    contents=contents,
+                    config=types.GenerateContentConfig(
+                        system_instruction=SYSTEM_PROMPT,
+                        temperature=0.7,
+                        max_output_tokens=1024,
+                    ),
+                )
+                return response.text.strip() if response.text else (
+                    "Lo siento, no pude generar una respuesta. Por favor intenta de nuevo."
+                )
+            except Exception as retry_exc:
+                logging.error(
+                    f"[{wa_id}] Reintento fallido tras 429: {retry_exc}"
+                )
+                return (
+                    "El servicio está temporalmente saturado. "
+                    "Por favor espera unos minutos y vuelve a escribir. 🙏"
+                )
+        logging.error(f"[{wa_id}] Error de API Gemini ({status}): {e}")
+        return "Ocurrió un error al procesar tu mensaje. Por favor intenta de nuevo."
+
     except Exception as e:
-        logging.error(f"[{wa_id}] Error al llamar a Gemini: {e}", exc_info=True)
+        logging.error(f"[{wa_id}] Error inesperado al llamar a Gemini: {e}", exc_info=True)
         return "Ocurrió un error al procesar tu mensaje. Por favor intenta de nuevo."
 
     finally:
